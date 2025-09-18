@@ -1,0 +1,18 @@
+@ToDoApi_HostAddress = http://localhost:5251
+
+POST {{ToDoApi_HostAddress}}/todos
+Accept: application/json
+Content-Type: application/json
+
+{
+  "description": "Buy groceries"
+}
+
+###
+
+
+POST {{ToDoApi_HostAddress}}/todos/cb37ce49-6d02-4684-a0aa-f92ebb41a710/complete
+Accept: application/json
+Content-Type: application/json
+
+###
