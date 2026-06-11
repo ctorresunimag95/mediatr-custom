@@ -1,8 +1,8 @@
+using Dispatcher.Contracts;
+using Dispatcher.Handlers;
 using FluentValidation;
-using ToDoApi.Dispatcher.Contracts;
-using ToDoApi.Dispatcher.Handlers;
 
-namespace ToDoApi.Dispatcher.Decorators;
+namespace Dispatcher.Decorators;
 
 public class ValidatorDecorator<TRequest, TResponse> : IDecorator<TRequest, TResponse>
     where TRequest : IRequest<TResponse>

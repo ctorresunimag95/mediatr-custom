@@ -1,6 +1,6 @@
-﻿using ToDoApi.Dispatcher.Contracts;
-using ToDoApi.Dispatcher.Decorators;
-using ToDoApi.Dispatcher.Handlers;
+﻿using Dispatcher.Contracts;
+using Dispatcher.Decorators;
+using Dispatcher.Handlers;
 
 namespace ToDoApi.ToDo;
 

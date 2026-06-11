@@ -1,7 +1,7 @@
-﻿using ToDoApi.Dispatcher.Contracts;
-using ToDoApi.Dispatcher.Wrappers;
+using Dispatcher.Contracts;
+using Dispatcher.Wrappers;
 
-namespace ToDoApi.Dispatcher;
+namespace Dispatcher;
 
 public interface IDispatcher
 {
@@ -12,11 +12,11 @@ public interface IDispatcher
     Task<TResponse> SendAsync<TResponse>(IQuery<TResponse> query, CancellationToken cancellationToken);
 }
 
-internal sealed class Dispatcher : IDispatcher
+internal sealed class DispatcherImpl : IDispatcher
 {
     private readonly IServiceProvider _serviceProvider;
 
-    public Dispatcher(IServiceProvider serviceProvider)
+    public DispatcherImpl(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
     }
@@ -26,7 +26,6 @@ internal sealed class Dispatcher : IDispatcher
         ArgumentNullException.ThrowIfNull(command);
 
         var requestType = command.GetType();
-
         var wrapperType = typeof(RequestHandlerWrapperImpl<,>).MakeGenericType(requestType, typeof(TResponse));
         var wrapper = (RequestHandlerWrapper<TResponse>)(Activator.CreateInstance(wrapperType) ?? throw new InvalidOperationException($"Could not create wrapper type for {requestType}"))!;
 
@@ -38,7 +37,6 @@ internal sealed class Dispatcher : IDispatcher
         ArgumentNullException.ThrowIfNull(command);
 
         var requestType = command.GetType();
-
         var wrapperType = typeof(RequestHandlerWrapperImpl<>).MakeGenericType(requestType);
         var wrapper = (RequestHandlerWrapper)(Activator.CreateInstance(wrapperType) ?? throw new InvalidOperationException($"Could not create wrapper type for {requestType}"))!;
 
@@ -48,9 +46,11 @@ internal sealed class Dispatcher : IDispatcher
     public async Task<TResponse> SendAsync<TResponse>(IQuery<TResponse> query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+
         var requestType = query.GetType();
         var wrapperType = typeof(RequestHandlerWrapperImpl<,>).MakeGenericType(requestType, typeof(TResponse));
         var wrapper = (RequestHandlerWrapper<TResponse>)(Activator.CreateInstance(wrapperType) ?? throw new InvalidOperationException($"Could not create wrapper type for {requestType}"))!;
+
         return await wrapper.Handle(query, _serviceProvider, cancellationToken);
     }
 }

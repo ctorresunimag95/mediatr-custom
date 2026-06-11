@@ -1,5 +1,5 @@
-﻿using ToDoApi.Dispatcher.Contracts;
-using ToDoApi.Dispatcher.Handlers;
+﻿using Dispatcher.Contracts;
+using Dispatcher.Handlers;
 
 namespace ToDoApi.ToDo;
 

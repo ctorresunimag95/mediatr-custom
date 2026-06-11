@@ -1,7 +1,8 @@
-﻿using ToDoApi.Dispatcher.Contracts;
-using ToDoApi.Dispatcher.Handlers;
+using Dispatcher.Contracts;
+using Dispatcher.Handlers;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace ToDoApi.Dispatcher.Wrappers;
+namespace Dispatcher.Wrappers;
 
 public abstract class RequestHandlerBase
 {
@@ -47,6 +48,6 @@ public class RequestHandlerWrapperImpl<TRequest> : RequestHandlerWrapper
         CancellationToken cancellationToken)
     {
         return serviceProvider.GetRequiredService<IRequestHandler<TRequest>>()
-                .Handle((TRequest)request, cancellationToken);
+            .Handle((TRequest)request, cancellationToken);
     }
 }

@@ -1,6 +1,6 @@
-﻿using ToDoApi.Dispatcher.Contracts;
+using Dispatcher.Contracts;
 
-namespace ToDoApi.Dispatcher.Handlers;
+namespace Dispatcher.Handlers;
 
 /// <summary>
 /// Interface for a command handler that returns a response of the provided type

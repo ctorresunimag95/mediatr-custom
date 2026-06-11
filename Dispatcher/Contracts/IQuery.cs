@@ -1,4 +1,4 @@
-﻿namespace ToDoApi.Dispatcher.Contracts;
+namespace Dispatcher.Contracts;
 
 /// <summary>
 /// Interface for a query that returns a response

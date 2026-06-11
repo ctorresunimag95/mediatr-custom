@@ -1,7 +1,6 @@
-﻿using ToDoApi.Dispatcher.Contracts;
+using Dispatcher.Contracts;
 
-namespace ToDoApi.Dispatcher.Handlers;
-
+namespace Dispatcher.Handlers;
 
 /// <summary>
 /// Defines a handler for a request
@@ -32,6 +31,5 @@ public interface IRequestHandler<in TRequest>
     /// </summary>
     /// <param name="request">The request</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Response from the request</returns>
     Task Handle(TRequest request, CancellationToken cancellationToken);
 }

@@ -1,7 +1,8 @@
-﻿using ToDoApi.Dispatcher.Contracts;
-using ToDoApi.Dispatcher.Handlers;
+using Dispatcher.Contracts;
+using Dispatcher.Handlers;
+using Microsoft.Extensions.Logging;
 
-namespace ToDoApi.Dispatcher.Decorators;
+namespace Dispatcher.Decorators;
 
 public class LoggingDecorator<TRequest, TResponse> : IDecorator<TRequest, TResponse>
     where TRequest : IRequest<TResponse>

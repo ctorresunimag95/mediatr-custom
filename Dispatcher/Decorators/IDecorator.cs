@@ -1,7 +1,7 @@
-using ToDoApi.Dispatcher.Contracts;
-using ToDoApi.Dispatcher.Handlers;
+using Dispatcher.Contracts;
+using Dispatcher.Handlers;
 
-namespace ToDoApi.Dispatcher.Decorators;
+namespace Dispatcher.Decorators;
 
 public interface IDecorator<in TRequest, TResponse> : IRequestHandler<TRequest, TResponse>, IDecoratorMarker
     where TRequest : IRequest<TResponse>

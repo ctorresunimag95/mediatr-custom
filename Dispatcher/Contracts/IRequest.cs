@@ -1,4 +1,4 @@
-﻿namespace ToDoApi.Dispatcher.Contracts;
+namespace Dispatcher.Contracts;
 
 /// <summary>
 /// Marker interface to represent a request with a void response

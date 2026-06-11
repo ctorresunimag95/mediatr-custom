@@ -1,7 +1,8 @@
-﻿using ToDoApi.Dispatcher.Decorators;
-using ToDoApi.Dispatcher.Handlers;
+using Dispatcher.Decorators;
+using Dispatcher.Handlers;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace ToDoApi.Dispatcher;
+namespace Dispatcher;
 
 public class DispatchOptions
 {
@@ -12,13 +13,13 @@ public class DispatchOptions
 
 public static class DispatcherServiceCollection
 {
-    public static IServiceCollection AddCustomDispatcher(this IServiceCollection services
+    public static IServiceCollection AddCustomDispatcher<TAssemblyMarker>(this IServiceCollection services
         , Action<DispatchOptions>? configureOptions = null, ServiceLifetime lifetime = ServiceLifetime.Scoped)
     {
         var options = new DispatchOptions();
         configureOptions?.Invoke(options);
 
-        services.Scan(scan => scan.FromAssembliesOf(typeof(DispatcherServiceCollection))
+        services.Scan(scan => scan.FromAssembliesOf(typeof(TAssemblyMarker))
 
             .AddClasses(classes => classes
                 .AssignableTo(typeof(IRequestHandler<,>))
@@ -45,7 +46,7 @@ public static class DispatcherServiceCollection
             services.Decorate(typeof(IRequestHandler<>), typeof(LoggingDecorator<>));
         }
 
-        services.AddTransient<IDispatcher, Dispatcher>();
+        services.AddTransient<IDispatcher, DispatcherImpl>();
 
         return services;
     }

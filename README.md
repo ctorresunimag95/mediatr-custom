@@ -15,6 +15,33 @@ The [`ToDoApi`](ToDoApi/) project is a working reference implementation.
 
 MediatR moved to a paid license, so this repo provides a drop-in-style replacement built on familiar concepts (`IRequest`, `IRequestHandler<,>`, a `Send`-style dispatcher) without the dependency or the license. It is intentionally minimal — read it, copy it, and adapt it to your project.
 
+## Repository structure
+
+```
+mediatr-custom/
+├── Dispatcher/        # Class library (net10.0) — the reusable dispatcher
+└── ToDoApi/           # ASP.NET Core 10 reference implementation
+```
+
+## Installation
+
+Reference the `Dispatcher` project (or publish it as a NuGet package) and add it to your project:
+
+```xml
+<ItemGroup>
+  <ProjectReference Include="../Dispatcher/Dispatcher.csproj" />
+</ItemGroup>
+```
+
+The library brings its own dependencies:
+
+| Package | Version | Purpose |
+| --- | --- | --- |
+| `FluentValidation` | 12.x | Used by the built-in `ValidatorDecorator` |
+| `Microsoft.Extensions.DependencyInjection.Abstractions` | 10.x | `IServiceCollection`, `IServiceProvider` |
+| `Microsoft.Extensions.Logging.Abstractions` | 10.x | `ILogger<T>` used by `LoggingDecorator` |
+| `Scrutor` | 7.x | Assembly scanning and `.Decorate()` |
+
 ## Core concepts
 
 | Concept | Interface | Purpose |
@@ -54,7 +81,7 @@ internal sealed class CreateToDoCommandHandler : ICommandHandler<CreateToDoComma
 
 ### Dispatching
 
-Depend on the `IDispatcher` **interface** (not the concrete type — `Dispatcher` is `internal`) and call `SendAsync`. The correct overload is chosen by whether the request is an `ICommand`, `ICommand<T>`, or `IQuery<T>`:
+Depend on the `IDispatcher` **interface** (not the concrete type) and call `SendAsync`. The correct overload is chosen by whether the request is an `ICommand`, `ICommand<T>`, or `IQuery<T>`:
 
 ```csharp
 app.MapPost("/todos", async (
@@ -86,20 +113,20 @@ public interface IDispatcher
 
 ## Automatic handler registration
 
-Registration is one call in `Program.cs`:
+Registration is one call in `Program.cs`, passing a type from the assembly that contains your handlers:
 
 ```csharp
-builder.Services.AddCustomDispatcher();
+builder.Services.AddCustomDispatcher<Program>();
 ```
 
-Under the hood, `AddCustomDispatcher` uses [Scrutor](https://github.com/khellang/Scrutor) to scan the assembly containing the dispatcher and register **every** class that implements `IRequestHandler<,>` or `IRequestHandler<>` against its implemented interfaces. Decorator types (those that implement `IDecoratorMarker`, including those that use the `IDecorator<,>` composite) are explicitly excluded so they don't get picked up as handlers.
+The generic type parameter (`Program` here) tells the scanner which assembly to search. Under the hood, `AddCustomDispatcher<TAssemblyMarker>` uses [Scrutor](https://github.com/khellang/Scrutor) to scan that assembly and register **every** class that implements `IRequestHandler<,>` or `IRequestHandler<>` against its implemented interfaces. Decorator types (those that implement `IDecoratorMarker`, including those that use the `IDecorator<,>` composite) are explicitly excluded so they don't get picked up as handlers.
 
 Key behaviors:
 
 - **No per-handler wiring** — drop a new handler into the project and it is registered on the next run.
 - **Internal handlers are supported** — scanning uses `publicOnly: false`, so `internal sealed class` handlers are found.
 - **One handler per request type** — each request resolves to a single handler (plus any decorators wrapped around it).
-- The dispatcher is registered as transient against the interface: `AddTransient<IDispatcher, Dispatcher>()`.
+- The dispatcher is registered as transient against the interface: `AddTransient<IDispatcher, ...>()`.
 
 ## Configuration
 
@@ -117,13 +144,13 @@ public class DispatchOptions
 
 ```csharp
 // Defaults: logging on, validation on, Scoped lifetime
-builder.Services.AddCustomDispatcher();
+builder.Services.AddCustomDispatcher<Program>();
 
 // Turn off the built-in validation decorator
-builder.Services.AddCustomDispatcher(options => options.UseValidation = false);
+builder.Services.AddCustomDispatcher<Program>(options => options.UseValidation = false);
 
 // Disable both built-in decorators
-builder.Services.AddCustomDispatcher(options =>
+builder.Services.AddCustomDispatcher<Program>(options =>
 {
     options.UseLogging = false;
     options.UseValidation = false;
@@ -135,7 +162,7 @@ builder.Services.AddCustomDispatcher(options =>
 The second parameter controls the lifetime used when registering handlers (defaults to `Scoped`):
 
 ```csharp
-builder.Services.AddCustomDispatcher(
+builder.Services.AddCustomDispatcher<Program>(
     configureOptions: options => options.UseLogging = true,
     lifetime: ServiceLifetime.Transient);
 ```
@@ -191,7 +218,7 @@ public class MyMetricsDecorator<TRequest, TResponse> : IDecorator<TRequest, TRes
     }
 }
 
-builder.Services.AddCustomDispatcher();
+builder.Services.AddCustomDispatcher<Program>();
 builder.Services.Decorate(typeof(IRequestHandler<,>), typeof(MyMetricsDecorator<,>));
 ```
 
@@ -236,7 +263,7 @@ A complete `Program.cs` setup:
 builder.Services.AddSingleton<ToDoRepository>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
-builder.Services.AddCustomDispatcher();                 // scans + registers all handlers
+builder.Services.AddCustomDispatcher<Program>();        // scans + registers all handlers in this assembly
 builder.Services.Decorate(                              // optional targeted decorator
     typeof(IRequestHandler<GetToDosQuery, IEnumerable<ToDo>>),
     typeof(GetToDosQueryHandlerDecorator));
@@ -244,9 +271,11 @@ builder.Services.Decorate(                              // optional targeted dec
 
 ## Dependencies
 
-- [Scrutor](https://github.com/khellang/Scrutor) — assembly scanning and decoration.
-- [FluentValidation](https://docs.fluentvalidation.net/) — used by the validation decorator (optional; disable via `UseValidation = false`).
-- .NET 9.
+- [Scrutor](https://github.com/khellang/Scrutor) 7.x — assembly scanning and decoration.
+- [FluentValidation](https://docs.fluentvalidation.net/) 12.x — used by the validation decorator (optional; disable via `UseValidation = false`).
+- [Microsoft.Extensions.DependencyInjection.Abstractions](https://www.nuget.org/packages/Microsoft.Extensions.DependencyInjection.Abstractions) 10.x — DI abstractions.
+- [Microsoft.Extensions.Logging.Abstractions](https://www.nuget.org/packages/Microsoft.Extensions.Logging.Abstractions) 10.x — logging abstractions.
+- .NET 10.
 
 ## Running the sample
 
