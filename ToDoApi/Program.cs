@@ -33,4 +33,11 @@ app.MapPost("/todos/{id:guid}/complete", async ([FromRoute] Guid id
     return Results.NoContent();
 });
 
+app.MapGet("/todos", async ([FromServices] Dispatcher dispatcher
+    , CancellationToken cancellationToken) =>
+{
+    var todos = await dispatcher.SendAsync(new GetToDosQuery(), cancellationToken);
+    return Results.Ok(todos);
+});
+
 app.Run();

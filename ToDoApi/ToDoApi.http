@@ -11,8 +11,11 @@ Content-Type: application/json
 ###
 
 
-POST {{ToDoApi_HostAddress}}/todos/cb37ce49-6d02-4684-a0aa-f92ebb41a710/complete
+POST {{ToDoApi_HostAddress}}/todos/a999466b-9adb-4fa0-9045-783797acc2a6/complete
 Accept: application/json
 Content-Type: application/json
 
 ###
+
+GET {{ToDoApi_HostAddress}}/todos
+Accept: application/json

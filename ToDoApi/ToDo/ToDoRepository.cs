@@ -8,6 +8,8 @@ internal sealed class ToDoRepository
 
     public ToDo? GetById(Guid id) => _todos.FirstOrDefault(t => t.Id == id);
 
+    public IEnumerable<ToDo> GetAll() => _todos;
+
     public void Complete(Guid id)
     {
         var todo = GetById(id);
