@@ -5,13 +5,12 @@ Accept: application/json
 Content-Type: application/json
 
 {
-  "description": "Buy groceries"
+  "description": ""
 }
 
 ###
 
-
-POST {{ToDoApi_HostAddress}}/todos/a999466b-9adb-4fa0-9045-783797acc2a6/complete
+POST {{ToDoApi_HostAddress}}/todos/2001b46d-82cb-4189-980a-8b734acba9b0/complete
 Accept: application/json
 Content-Type: application/json
 

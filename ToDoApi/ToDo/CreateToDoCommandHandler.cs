@@ -1,4 +1,5 @@
-﻿using ToDoApi.Dispatcher.Contracts;
+﻿using FluentValidation;
+using ToDoApi.Dispatcher.Contracts;
 using ToDoApi.Dispatcher.Handlers;
 
 namespace ToDoApi.ToDo;
@@ -22,6 +23,14 @@ public sealed class ToDo
     }
 
     public void Complete() => IsCompleted = true;
+}
+
+public class CreateToDoCommandValidator : AbstractValidator<CreateToDoCommand>
+{
+    public CreateToDoCommandValidator()
+    {
+        RuleFor(c => c.Description).NotEmpty().WithMessage("Description is required.");
+    }
 }
 
 internal sealed class CreateToDoCommandHandler : ICommandHandler<CreateToDoCommand, CreateToDoResponse>

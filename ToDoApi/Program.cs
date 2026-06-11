@@ -1,5 +1,9 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using ToDoApi;
 using ToDoApi.Dispatcher;
+using ToDoApi.Dispatcher.Handlers;
+using ToDoApi.ErrorHandlers;
 using ToDoApi.ToDo;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,12 +14,29 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddSingleton<ToDoRepository>();
 
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddCustomDispatcher();
+builder.Services.Decorate(typeof(IRequestHandler<GetToDosQuery, IEnumerable<ToDo>>), typeof(GetToDosQueryHandlerDecorator));
+
+
+builder.Services
+    .AddProblemDetails(options =>
+        options.CustomizeProblemDetails = ctx =>
+        {
+            ctx.ProblemDetails.Extensions.Add("trace-id", ctx.HttpContext.TraceIdentifier);
+            ctx.ProblemDetails.Extensions.Add("instance", $"{ctx.HttpContext.Request.Method} {ctx.HttpContext.Request.Path}");
+        });
+
+builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
+builder.Services.AddExceptionHandler<GlobalErrorHandler>();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 app.MapOpenApi();
+
+app.UseStatusCodePages();
+app.UseExceptionHandler();
 
 app.MapPost("/todos", async ([FromBody] CreateToDoCommand command
     , [FromServices] Dispatcher dispatcher

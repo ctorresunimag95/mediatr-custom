@@ -3,7 +3,7 @@ using ToDoApi.Dispatcher.Handlers;
 
 namespace ToDoApi.Dispatcher.Decorators;
 
-public class LoggingDecorator<TRequest, TResponse> : IRequestHandler<TRequest, TResponse>
+public class LoggingDecorator<TRequest, TResponse> : IRequestHandler<TRequest, TResponse>, IDecoratorMarker
     where TRequest : IRequest<TResponse>
 {
     private readonly IRequestHandler<TRequest, TResponse> _innerHandler;
@@ -26,15 +26,24 @@ public class LoggingDecorator<TRequest, TResponse> : IRequestHandler<TRequest, T
 
         _logger.LogInformation("Started handling message {MessageType}", typeof(TRequest).Name);
 
-        var response = await _innerHandler.Handle(request, cancellationToken);
-
-        _logger.LogInformation("Finished handling message {MessageType}", typeof(TRequest).Name);
-
-        return response;
+        try
+        {
+            var response = await _innerHandler.Handle(request, cancellationToken);
+            return response;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while handling message {MessageType}", typeof(TRequest).Name);
+            throw;
+        }
+        finally
+        {
+            _logger.LogInformation("Finished handling message {MessageType}", typeof(TRequest).Name);
+        }
     }
 }
 
-public class LoggingDecorator<TRequest> : IRequestHandler<TRequest>
+public class LoggingDecorator<TRequest> : IRequestHandler<TRequest>, IDecoratorMarker
     where TRequest : IRequest
 {
     private readonly IRequestHandler<TRequest> _innerHandler;
@@ -57,8 +66,18 @@ public class LoggingDecorator<TRequest> : IRequestHandler<TRequest>
 
         _logger.LogInformation("Started handling message {MessageType}", typeof(TRequest).Name);
 
-        await _innerHandler.Handle(request, cancellationToken);
-
-        _logger.LogInformation("Finished handling message {MessageType}", typeof(TRequest).Name);
+        try
+        {
+            await _innerHandler.Handle(request, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while handling message {MessageType}", typeof(TRequest).Name);
+            throw;
+        }
+        finally
+        {
+            _logger.LogInformation("Finished handling message {MessageType}", typeof(TRequest).Name);
+        }
     }
 }
