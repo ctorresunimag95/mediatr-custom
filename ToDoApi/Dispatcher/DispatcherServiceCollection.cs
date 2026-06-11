@@ -45,7 +45,7 @@ public static class DispatcherServiceCollection
             services.Decorate(typeof(IRequestHandler<>), typeof(LoggingDecorator<>));
         }
 
-        services.AddTransient<Dispatcher>();
+        services.AddTransient<IDispatcher, Dispatcher>();
 
         return services;
     }

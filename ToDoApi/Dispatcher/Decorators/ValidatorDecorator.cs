@@ -4,7 +4,7 @@ using ToDoApi.Dispatcher.Handlers;
 
 namespace ToDoApi.Dispatcher.Decorators;
 
-public class ValidatorDecorator<TRequest, TResponse> : IRequestHandler<TRequest, TResponse>, IDecoratorMarker
+public class ValidatorDecorator<TRequest, TResponse> : IDecorator<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
     private readonly IRequestHandler<TRequest, TResponse> _innerHandler;
@@ -31,7 +31,7 @@ public class ValidatorDecorator<TRequest, TResponse> : IRequestHandler<TRequest,
     }
 }
 
-public class ValidatorDecorator<TRequest> : IRequestHandler<TRequest>, IDecoratorMarker
+public class ValidatorDecorator<TRequest> : IDecorator<TRequest>
     where TRequest : IRequest
 {
     private readonly IRequestHandler<TRequest> _innerHandler;

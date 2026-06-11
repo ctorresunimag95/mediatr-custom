@@ -3,7 +3,7 @@ using ToDoApi.Dispatcher.Handlers;
 
 namespace ToDoApi.Dispatcher.Decorators;
 
-public class LoggingDecorator<TRequest, TResponse> : IRequestHandler<TRequest, TResponse>, IDecoratorMarker
+public class LoggingDecorator<TRequest, TResponse> : IDecorator<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
     private readonly IRequestHandler<TRequest, TResponse> _innerHandler;
@@ -43,7 +43,7 @@ public class LoggingDecorator<TRequest, TResponse> : IRequestHandler<TRequest, T
     }
 }
 
-public class LoggingDecorator<TRequest> : IRequestHandler<TRequest>, IDecoratorMarker
+public class LoggingDecorator<TRequest> : IDecorator<TRequest>
     where TRequest : IRequest
 {
     private readonly IRequestHandler<TRequest> _innerHandler;

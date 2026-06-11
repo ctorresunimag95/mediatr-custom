@@ -3,7 +3,16 @@ using ToDoApi.Dispatcher.Wrappers;
 
 namespace ToDoApi.Dispatcher;
 
-internal sealed class Dispatcher
+public interface IDispatcher
+{
+    Task<TResponse> SendAsync<TResponse>(ICommand<TResponse> command, CancellationToken cancellationToken);
+
+    Task SendAsync(ICommand command, CancellationToken cancellationToken);
+
+    Task<TResponse> SendAsync<TResponse>(IQuery<TResponse> query, CancellationToken cancellationToken);
+}
+
+internal sealed class Dispatcher : IDispatcher
 {
     private readonly IServiceProvider _serviceProvider;
 

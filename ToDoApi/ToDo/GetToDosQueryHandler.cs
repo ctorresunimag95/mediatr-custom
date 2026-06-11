@@ -20,7 +20,7 @@ internal sealed class GetToDosQueryHandler : IQueryHandler<GetToDosQuery, IEnume
     }
 }
 
-internal sealed class GetToDosQueryHandlerDecorator : IRequestHandler<GetToDosQuery, IEnumerable<ToDo>>, IDecoratorMarker
+internal sealed class GetToDosQueryHandlerDecorator : IDecorator<GetToDosQuery, IEnumerable<ToDo>>
 {
     private readonly IRequestHandler<GetToDosQuery, IEnumerable<ToDo>> _innerHandler;
     private readonly ILogger<GetToDosQueryHandlerDecorator> _logger;

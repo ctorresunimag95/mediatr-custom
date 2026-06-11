@@ -39,7 +39,7 @@ app.UseStatusCodePages();
 app.UseExceptionHandler();
 
 app.MapPost("/todos", async ([FromBody] CreateToDoCommand command
-    , [FromServices] Dispatcher dispatcher
+    , [FromServices] IDispatcher dispatcher
     , CancellationToken cancellationToken) =>
 {
     var response = await dispatcher.SendAsync(command, cancellationToken);
@@ -47,14 +47,14 @@ app.MapPost("/todos", async ([FromBody] CreateToDoCommand command
 });
 
 app.MapPost("/todos/{id:guid}/complete", async ([FromRoute] Guid id
-    , [FromServices] Dispatcher dispatcher
+    , [FromServices] IDispatcher dispatcher
     , CancellationToken cancellationToken) =>
 {
     await dispatcher.SendAsync(new CompleteTodoCommand(id), cancellationToken);
     return Results.NoContent();
 });
 
-app.MapGet("/todos", async ([FromServices] Dispatcher dispatcher
+app.MapGet("/todos", async ([FromServices] IDispatcher dispatcher
     , CancellationToken cancellationToken) =>
 {
     var todos = await dispatcher.SendAsync(new GetToDosQuery(), cancellationToken);
