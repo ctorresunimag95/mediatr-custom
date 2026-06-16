@@ -61,4 +61,20 @@ app.MapGet("/todos", async ([FromServices] IDispatcher dispatcher
     return Results.Ok(todos);
 });
 
+app.MapGet("/todos/search", async ([FromQuery] string term
+    , [FromServices] IDispatcher dispatcher
+    , CancellationToken cancellationToken) =>
+{
+    var todos = await dispatcher.SendAsync(new SearchToDosRequest(term), cancellationToken);
+    return Results.Ok(todos);
+});
+
+app.MapDelete("/todos/{id:guid}", async ([FromRoute] Guid id
+    , [FromServices] IDispatcher dispatcher
+    , CancellationToken cancellationToken) =>
+{
+    await dispatcher.SendAsync(new DeleteToDoRequest(id), cancellationToken);
+    return Results.NoContent();
+});
+
 app.Run();

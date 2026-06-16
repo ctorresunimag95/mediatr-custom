@@ -13,9 +13,11 @@ internal sealed class ToDoRepository
     public void Complete(Guid id)
     {
         var todo = GetById(id);
-        
+
         if (todo is null) return;
-        
+
         todo.Complete();
     }
+
+    public void Remove(Guid id) => _todos.RemoveAll(t => t.Id == id);
 }

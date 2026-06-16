@@ -5,12 +5,12 @@ Accept: application/json
 Content-Type: application/json
 
 {
-  "description": ""
+  "description": "do homework"
 }
 
 ###
 
-POST {{ToDoApi_HostAddress}}/todos/6613de28-82ba-4291-bd69-3e422b5cbd8c/complete
+POST {{ToDoApi_HostAddress}}/todos/beb837f3-618a-46a9-8f06-71678ad22183/complete
 Accept: application/json
 Content-Type: application/json
 
@@ -18,3 +18,12 @@ Content-Type: application/json
 
 GET {{ToDoApi_HostAddress}}/todos
 Accept: application/json
+
+###
+
+GET {{ToDoApi_HostAddress}}/todos/search?term=books
+Accept: application/json
+
+###
+
+DELETE {{ToDoApi_HostAddress}}/todos/3c6f37c2-da19-4392-adf1-ea80e7763287
