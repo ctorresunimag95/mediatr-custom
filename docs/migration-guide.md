@@ -38,6 +38,9 @@ Add the dispatcher project reference:
 ```xml
 <!-- After -->
 <ProjectReference Include="../Dispatcher/Dispatcher.csproj" />
+
+<!-- Or install nuget package when created -->
+<PackageReference Include="Dispatcher" Version="1.0.0" />
 ```
 
 ---
