@@ -122,22 +122,36 @@ The custom library replicates only the features teams actually use — a single 
 - **Maintenance ownership** — The team is fully responsible for bug fixes, feature additions, and .NET compatibility updates. This is manageable given the library's small size but is a real ongoing commitment.
 - **No community ecosystem** — Third-party extensions or integrations built for MediatR (e.g. community pipeline behaviors) are not directly compatible and would need to be ported.
 - **Migration effort** — Existing projects using MediatR need only replace the NuGet package reference and the DI registration call (`AddMediatR` → `AddCustomDispatcher`). `IRequest`, `IRequestHandler`, and validators require no changes. Adopting the `ICommand`/`IQuery` semantic interfaces is optional and can be done incrementally.
+- **No notification bus equivalent** — `INotification` / `INotificationHandler<T>` are out of scope for this library. Teams that rely on publish-subscribe patterns must keep MediatR temporarily for notifications or adopt a dedicated event bus.
+- **One handler per request type** — The dispatcher assumes each request resolves to exactly one handler. Fan-out, multiple competing handlers, and notification-style dispatch are not supported.
+- **Host-oriented defaults** — `IDispatcher` is registered as `Transient`, while handlers default to `Scoped` to align with typical ASP.NET Core request lifetimes. Teams can override handler lifetime when needed, but the lifetime parameter on `AddCustomDispatcher` does not change the dispatcher's own lifetime.
 - **Testing responsibility** — Unit and integration tests for the dispatcher itself are owned by the team. There is no upstream test suite to rely on.
+
+### Implementation Notes
+
+- **Validation setup is explicit** — `ValidatorDecorator` runs automatically when enabled, but projects must still register validators with FluentValidation (for example, `AddValidatorsFromAssemblyContaining<Program>()`).
+- **Decorator order is registration-driven** — The built-in registration adds `ValidatorDecorator` first and `LoggingDecorator` second. With Scrutor, the last registered decorator becomes the outermost wrapper.
+- **Runtime dispatch is simple by design** — Requests are routed through runtime-generated wrapper types rather than source-generated dispatch code. This keeps the implementation small and readable, at the cost of some reflection-based dispatch overhead.
+
+### Dependency Mitigation Notes
+
+- Scrutor should be treated like any other shared architectural dependency: include it in normal security, support, and upgrade review.
+- If Scrutor's maintenance or compatibility posture changes, the fallback is straightforward: register each `IRequestHandler<,>` manually in DI and retain the rest of the custom dispatcher design unchanged or apply alternative assembly scanning.
 
 ---
 
 ## System Architecture
 
-The following diagram shows how a request flows through the dispatcher pipeline, from the call site to the handler and back.
+The following diagram shows how a request flows through the dispatcher pipeline, from the call site to the handler and back. The same pipeline applies to both `IRequest<TResponse>` and void `IRequest` handlers.
 
 ```mermaid
 flowchart LR
-    A([Command / Query / IRequest]) --> B[IDispatcher.SendAsync]
+        A([Command / Query / IRequest]) --> B[IDispatcher.SendAsync]
     B --> C[LoggingDecorator]
     C --> D[ValidatorDecorator]
     D --> E[Custom Decorators\noptional]
     E --> F[IRequestHandler\nYour Handler]
-    F --> G([Response])
+        F --> G([Response or completion])
 
     style A fill:#4A90D9,color:#fff,stroke:none
     style G fill:#4A90D9,color:#fff,stroke:none
@@ -156,10 +170,25 @@ Command / Query / IRequest
             └─▶ ValidatorDecorator   (runs FluentValidation before the handler)
                     └─▶ Custom Decorators    (metrics, caching, auth checks, etc.)
                             └─▶ Handler      (your business logic)
-                                    └─▶ Response
+                                                                                                                                                └─▶ Response or completion
 ```
 
-Decorators are applied in reverse registration order by Scrutor's `.Decorate()`, so the last-registered decorator is the outermost wrapper. The built-in setup registers `ValidatorDecorator` first and `LoggingDecorator` second, making logging the outermost layer.
+Built-in registration order:
+
+```csharp
+services.Decorate(typeof(IRequestHandler<,>), typeof(ValidatorDecorator<,>));
+services.Decorate(typeof(IRequestHandler<,>), typeof(LoggingDecorator<,>));
+```
+
+Resulting call stack:
+
+```text
+LoggingDecorator.Handle()
+        -> ValidatorDecorator.Handle()
+                -> YourHandler.Handle()
+```
+
+Scrutor applies the last registered decorator as the outer wrapper, which is why logging runs around validation and the handler.
 
 ---
 

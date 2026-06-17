@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Dispatcher.Contracts;
 using Dispatcher.Wrappers;
 
@@ -18,6 +19,9 @@ public interface IDispatcher
 
 internal sealed class DispatcherImpl : IDispatcher
 {
+    private static readonly ConcurrentDictionary<(Type RequestType, Type ResponseType), RequestHandlerBase> _typedWrapperCache = new();
+    private static readonly ConcurrentDictionary<Type, RequestHandlerWrapper> _voidWrapperCache = new();
+
     private readonly IServiceProvider _serviceProvider;
 
     public DispatcherImpl(IServiceProvider serviceProvider)
@@ -39,8 +43,14 @@ internal sealed class DispatcherImpl : IDispatcher
         ArgumentNullException.ThrowIfNull(request);
 
         var requestType = request.GetType();
-        var wrapperType = typeof(RequestHandlerWrapperImpl<,>).MakeGenericType(requestType, typeof(TResponse));
-        var wrapper = (RequestHandlerWrapper<TResponse>)(Activator.CreateInstance(wrapperType) ?? throw new InvalidOperationException($"Could not create wrapper type for {requestType}"))!;
+        var wrapper = (RequestHandlerWrapper<TResponse>)_typedWrapperCache.GetOrAdd(
+            (requestType, typeof(TResponse)),
+            static key =>
+            {
+                var wrapperType = typeof(RequestHandlerWrapperImpl<,>).MakeGenericType(key.RequestType, key.ResponseType);
+                return (RequestHandlerBase)(Activator.CreateInstance(wrapperType)
+                    ?? throw new InvalidOperationException($"Could not create wrapper type for {key.RequestType}"));
+            });
 
         return await wrapper.Handle(request, _serviceProvider, cancellationToken);
     }
@@ -50,8 +60,12 @@ internal sealed class DispatcherImpl : IDispatcher
         ArgumentNullException.ThrowIfNull(request);
 
         var requestType = request.GetType();
-        var wrapperType = typeof(RequestHandlerWrapperImpl<>).MakeGenericType(requestType);
-        var wrapper = (RequestHandlerWrapper)(Activator.CreateInstance(wrapperType) ?? throw new InvalidOperationException($"Could not create wrapper type for {requestType}"))!;
+        var wrapper = _voidWrapperCache.GetOrAdd(requestType, static t =>
+        {
+            var wrapperType = typeof(RequestHandlerWrapperImpl<>).MakeGenericType(t);
+            return (RequestHandlerWrapper)(Activator.CreateInstance(wrapperType)
+                ?? throw new InvalidOperationException($"Could not create wrapper type for {t}"));
+        });
 
         await wrapper.Handle(request, _serviceProvider, cancellationToken);
     }

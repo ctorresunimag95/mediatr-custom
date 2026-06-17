@@ -208,8 +208,9 @@ Key behaviors:
 
 - **No per-handler wiring** — drop a new handler class into the project and it is picked up automatically on the next run.
 - **Internal handlers supported** — scanning uses `publicOnly: false`, so `internal sealed class` handlers are found.
-- **One handler per request type** — each request resolves to exactly one handler (plus any decorators wrapped around it).
-- **Dispatcher lifetime** — registered as `Transient` against `IDispatcher` by default.
+- **One handler per request type** — each request resolves to exactly one handler (plus any decorators wrapped around it). Registering multiple handlers for the same request type is not a supported scenario and will fail during resolution.
+- **Dispatcher lifetime** — `IDispatcher` is always registered as `Transient`.
+- **Handler lifetime** — handlers default to `Scoped`, which aligns with common ASP.NET Core request-scoped dependencies such as `DbContext`.
 
 ---
 
@@ -224,6 +225,8 @@ public class DispatchOptions
     public bool UseValidation { get; set; } = true;  // wrap every handler in ValidatorDecorator
 }
 ```
+
+The `lifetime` parameter controls handler registrations only. It does not change the `Transient` lifetime of `IDispatcher` itself.
 
 ```csharp
 // Defaults: logging on, validation on, Scoped handler lifetime
@@ -263,6 +266,15 @@ Resulting pipeline:
 ```
 LoggingDecorator → ValidatorDecorator → YourHandler
 ```
+
+Concrete registration example:
+
+```csharp
+services.Decorate(typeof(IRequestHandler<,>), typeof(ValidatorDecorator<,>));
+services.Decorate(typeof(IRequestHandler<,>), typeof(LoggingDecorator<,>));
+```
+
+Because Scrutor applies the last registered decorator as the outer wrapper, the request enters `LoggingDecorator` first, then `ValidatorDecorator`, and finally the handler.
 
 ### Adding a global custom decorator
 
@@ -339,6 +351,13 @@ Validators are plain FluentValidation classes. Register them alongside the dispa
 
 ```csharp
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddCustomDispatcher<Program>();
+```
+
+If `UseValidation` is left enabled but no validators are registered for a request type, the `ValidatorDecorator` simply passes the request through.
+
+```csharp
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 public class CreateToDoCommandValidator : AbstractValidator<CreateToDoCommand>
 {
@@ -351,7 +370,10 @@ public class CreateToDoCommandValidator : AbstractValidator<CreateToDoCommand>
 }
 ```
 
-If no validator is registered for a request type, the `ValidatorDecorator` passes through without error.
+## Operational constraints
+
+- **Notifications are out of scope** — this library does not implement `INotification` / `INotificationHandler<T>` semantics.
+- **Single-handler resolution** — requests are modeled as one request to one handler, optionally wrapped by decorators.
 
 ---
 

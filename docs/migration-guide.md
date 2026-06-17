@@ -67,6 +67,8 @@ builder.Services.AddCustomDispatcher<Program>(options =>
 });
 ```
 
+`AddCustomDispatcher` keeps `IDispatcher` registered as `Transient`. The optional `lifetime` parameter controls handler registrations only and defaults to `Scoped`.
+
 ---
 
 ## Step 3 — Update request definitions
@@ -303,7 +305,7 @@ builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBeh
 ```
 
 ```csharp
-// After — nothing extra needed; ValidatorDecorator is on by default
+// After — register validators and the dispatcher; ValidatorDecorator is on by default
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddCustomDispatcher<Program>(); // UseValidation = true by default
 ```
