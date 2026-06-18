@@ -196,3 +196,4 @@ Scrutor applies the last registered decorator as the outer wrapper, which is why
 
 - [Custom Dispatcher — Full Technical Reference](custom-dispatcher.md) — complete API surface, configuration options, decorator pipeline details, and usage examples.
 - [Migration Guide — MediatR to Custom Dispatcher](migration-guide.md) — step-by-step instructions with before/after code snippets for migrating an existing MediatR project.
+- [Benchmark — Custom Dispatcher vs MediatR](benchmarks.md) — BenchmarkDotNet comparison of dispatch and pipeline overhead against MediatR 12.5.0, confirming the migration carries no performance penalty.
