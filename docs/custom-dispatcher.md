@@ -24,7 +24,6 @@ Reference the `Dispatcher` project directly, or publish it as a NuGet package:
 
 | Package | Version | Purpose |
 |---|---|---|
-| `Scrutor` | 7.x | Assembly scanning and `.Decorate()` support |
 | `FluentValidation` | 12.x | Used by the built-in `ValidatorDecorator` |
 | `Microsoft.Extensions.DependencyInjection.Abstractions` | 10.x | `IServiceCollection`, `IServiceProvider` |
 | `Microsoft.Extensions.Logging.Abstractions` | 10.x | `ILogger<T>` used by `LoggingDecorator` |
@@ -196,17 +195,23 @@ await dispatcher.SendAsync(new DeleteToDoRequest(id), cancellationToken);
 
 ## Automatic handler registration
 
-Registration is a single call in `Program.cs`. The generic type parameter tells the scanner which assembly to search:
+Registration is a single call in `Program.cs`. Pass one or more assembly marker types — one per project that contains handlers:
 
 ```csharp
+// Single assembly — convenience generic overload
 builder.Services.AddCustomDispatcher<Program>();
+
+// Multiple assemblies — when handlers live in separate projects
+builder.Services.AddCustomDispatcher([typeof(Program), typeof(OtherProjectMarker)]);
 ```
 
-`AddCustomDispatcher<TAssemblyMarker>` uses [Scrutor](https://github.com/khellang/Scrutor) to scan that assembly and register every class that implements `IRequestHandler<,>` or `IRequestHandler<>` against its implemented interface. Decorator types (those that implement `IDecoratorMarker`) are explicitly excluded from handler registration.
+Both overloads scan every supplied assembly and register every class that implements `IRequestHandler<,>` or `IRequestHandler<>` against its implemented interface. Decorator types (those that implement `IDecoratorMarker`) are explicitly excluded from handler registration. Duplicate assemblies (two markers from the same assembly) are silently deduplicated.
+
+The generic `AddCustomDispatcher<TAssemblyMarker>()` overload is a convenience wrapper — it delegates to `AddCustomDispatcher(IEnumerable<Type>)` with a single-element list.
 
 Key behaviors:
 
-- **No per-handler wiring** — drop a new handler class into the project and it is picked up automatically on the next run.
+- **No per-handler wiring** — drop a new handler class into any scanned project and it is picked up automatically on the next run.
 - **Internal handlers supported** — scanning uses `publicOnly: false`, so `internal sealed class` handlers are found.
 - **One handler per request type** — each request resolves to exactly one handler (plus any decorators wrapped around it). Registering multiple handlers for the same request type is not a supported scenario and will fail during resolution.
 - **Dispatcher lifetime** — `IDispatcher` is always registered as `Transient`.
@@ -232,6 +237,14 @@ The `lifetime` parameter controls handler registrations only. It does not change
 // Defaults: logging on, validation on, Scoped handler lifetime
 builder.Services.AddCustomDispatcher<Program>();
 
+// Multiple assemblies
+builder.Services.AddCustomDispatcher([typeof(Program), typeof(OtherProjectMarker)]);
+
+// Multiple assemblies with options
+builder.Services.AddCustomDispatcher(
+    [typeof(Program), typeof(OtherProjectMarker)],
+    options => options.UseValidation = false);
+
 // Disable the built-in validation decorator
 builder.Services.AddCustomDispatcher<Program>(options => options.UseValidation = false);
 
@@ -245,6 +258,11 @@ builder.Services.AddCustomDispatcher<Program>(options =>
 // Custom handler lifetime
 builder.Services.AddCustomDispatcher<Program>(
     configureOptions: options => options.UseLogging = true,
+    lifetime: ServiceLifetime.Transient);
+
+// Multi-assembly with custom lifetime
+builder.Services.AddCustomDispatcher(
+    [typeof(Program), typeof(OtherProjectMarker)],
     lifetime: ServiceLifetime.Transient);
 ```
 
@@ -274,11 +292,11 @@ services.Decorate(typeof(IRequestHandler<,>), typeof(ValidatorDecorator<,>));
 services.Decorate(typeof(IRequestHandler<,>), typeof(LoggingDecorator<,>));
 ```
 
-Because Scrutor applies the last registered decorator as the outer wrapper, the request enters `LoggingDecorator` first, then `ValidatorDecorator`, and finally the handler.
+Because the last registered decorator becomes the outer wrapper, the request enters `LoggingDecorator` first, then `ValidatorDecorator`, and finally the handler.
 
 ### Adding a global custom decorator
 
-A global decorator wraps every handler. Register it with Scrutor's `.Decorate()` after `AddCustomDispatcher`:
+A global decorator wraps every handler. Register it with `.Decorate()` after `AddCustomDispatcher`:
 
 ```csharp
 public class MetricsDecorator<TRequest, TResponse> : IDecorator<TRequest, TResponse>
@@ -383,7 +401,11 @@ public class CreateToDoCommandValidator : AbstractValidator<CreateToDoCommand>
 builder.Services.AddSingleton<ToDoRepository>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
-builder.Services.AddCustomDispatcher<Program>();        // scans + registers all handlers
+// Single assembly
+builder.Services.AddCustomDispatcher<Program>();
+
+// Or across multiple projects
+builder.Services.AddCustomDispatcher([typeof(Program), typeof(OtherProjectMarker)]);
 
 // Optional: global custom decorator
 builder.Services.Decorate(typeof(IRequestHandler<,>), typeof(MetricsDecorator<,>));

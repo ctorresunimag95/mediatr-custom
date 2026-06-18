@@ -5,12 +5,12 @@ Accept: application/json
 Content-Type: application/json
 
 {
-  "description": "bu groceries"
+  "description": "do homework"
 }
 
 ###
 
-POST {{ToDoApi_HostAddress}}/todos/04581967-cde2-4b7a-99b4-903849c0fcbf/complete
+POST {{ToDoApi_HostAddress}}/todos/c9526424-73ba-4bfe-af27-1e92aae8cab3/complete
 Accept: application/json
 Content-Type: application/json
 
@@ -26,4 +26,4 @@ Accept: application/json
 
 ###
 
-DELETE {{ToDoApi_HostAddress}}/todos/04581967-cde2-4b7a-99b4-903849c0fcbf
+DELETE {{ToDoApi_HostAddress}}/todos/49922438-fb97-481e-9790-f1858534c3c4

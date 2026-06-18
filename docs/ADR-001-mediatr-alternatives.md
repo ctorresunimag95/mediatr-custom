@@ -130,13 +130,8 @@ The custom library replicates only the features teams actually use — a single 
 ### Implementation Notes
 
 - **Validation setup is explicit** — `ValidatorDecorator` runs automatically when enabled, but projects must still register validators with FluentValidation (for example, `AddValidatorsFromAssemblyContaining<Program>()`).
-- **Decorator order is registration-driven** — The built-in registration adds `ValidatorDecorator` first and `LoggingDecorator` second. With Scrutor, the last registered decorator becomes the outermost wrapper.
+- **Decorator order is registration-driven** — The built-in registration adds `ValidatorDecorator` first and `LoggingDecorator` second. The last registered decorator becomes the outermost wrapper.
 - **Runtime dispatch is simple by design** — Requests are routed through runtime-generated wrapper types rather than source-generated dispatch code. This keeps the implementation small and readable, at the cost of some reflection-based dispatch overhead.
-
-### Dependency Mitigation Notes
-
-- Scrutor should be treated like any other shared architectural dependency: include it in normal security, support, and upgrade review.
-- If Scrutor's maintenance or compatibility posture changes, the fallback is straightforward: register each `IRequestHandler<,>` manually in DI and retain the rest of the custom dispatcher design unchanged or apply alternative assembly scanning.
 
 ---
 
@@ -188,7 +183,7 @@ LoggingDecorator.Handle()
                 -> YourHandler.Handle()
 ```
 
-Scrutor applies the last registered decorator as the outer wrapper, which is why logging runs around validation and the handler.
+The last registered decorator becomes the outer wrapper, which is why logging runs around validation and the handler.
 
 ---
 

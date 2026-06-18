@@ -15,7 +15,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddSingleton<ToDoRepository>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-builder.Services.AddCustomDispatcher<Program>();
+builder.Services.AddCustomDispatcher([typeof(Program)]);
 builder.Services.Decorate(typeof(IRequestHandler<GetToDosQuery, IEnumerable<ToDo>>), typeof(GetToDosQueryHandlerDecorator));
 
 

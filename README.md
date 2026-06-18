@@ -40,7 +40,6 @@ The library brings its own dependencies:
 | `FluentValidation` | 12.x | Used by the built-in `ValidatorDecorator` |
 | `Microsoft.Extensions.DependencyInjection.Abstractions` | 10.x | `IServiceCollection`, `IServiceProvider` |
 | `Microsoft.Extensions.Logging.Abstractions` | 10.x | `ILogger<T>` used by `LoggingDecorator` |
-| `Scrutor` | 7.x | Assembly scanning and `.Decorate()` |
 
 ## Core concepts
 
@@ -113,17 +112,21 @@ public interface IDispatcher
 
 ## Automatic handler registration
 
-Registration is one call in `Program.cs`, passing a type from the assembly that contains your handlers:
+Registration is one call in `Program.cs`. Pass one or more assembly marker types — one per project that contains handlers:
 
 ```csharp
+// Single assembly (convenience generic overload)
 builder.Services.AddCustomDispatcher<Program>();
+
+// Multiple assemblies — handlers spread across several projects
+builder.Services.AddCustomDispatcher([typeof(Program), typeof(OtherProjectMarker)]);
 ```
 
-The generic type parameter (`Program` here) tells the scanner which assembly to search. Under the hood, `AddCustomDispatcher<TAssemblyMarker>` uses [Scrutor](https://github.com/khellang/Scrutor) to scan that assembly and register **every** class that implements `IRequestHandler<,>` or `IRequestHandler<>` against its implemented interfaces. Decorator types (those that implement `IDecoratorMarker`, including those that use the `IDecorator<,>` composite) are explicitly excluded so they don't get picked up as handlers.
+`AddCustomDispatcher` scans every assembly represented by the marker types and registers **every** class that implements `IRequestHandler<,>` or `IRequestHandler<>` against its implemented interface. Decorator types (those that implement `IDecoratorMarker`, including those that use the `IDecorator<,>` composite) are explicitly excluded so they don't get picked up as handlers. Duplicate assemblies (two markers from the same assembly) are silently deduplicated.
 
 Key behaviors:
 
-- **No per-handler wiring** — drop a new handler into the project and it is registered on the next run.
+- **No per-handler wiring** — drop a new handler into any scanned project and it is registered on the next run.
 - **Internal handlers are supported** — scanning uses `publicOnly: false`, so `internal sealed class` handlers are found.
 - **One handler per request type** — each request resolves to a single handler (plus any decorators wrapped around it).
 - The dispatcher is registered as transient against the interface: `AddTransient<IDispatcher, ...>()`.
@@ -146,6 +149,11 @@ public class DispatchOptions
 // Defaults: logging on, validation on, Scoped lifetime
 builder.Services.AddCustomDispatcher<Program>();
 
+// Multiple assemblies with options
+builder.Services.AddCustomDispatcher(
+    [typeof(Program), typeof(OtherProjectMarker)],
+    options => options.UseValidation = false);
+
 // Turn off the built-in validation decorator
 builder.Services.AddCustomDispatcher<Program>(options => options.UseValidation = false);
 
@@ -159,11 +167,16 @@ builder.Services.AddCustomDispatcher<Program>(options =>
 
 ### Handler lifetime
 
-The second parameter controls the lifetime used when registering handlers (defaults to `Scoped`):
+The `lifetime` parameter controls the lifetime used when registering handlers (defaults to `Scoped`):
 
 ```csharp
 builder.Services.AddCustomDispatcher<Program>(
     configureOptions: options => options.UseLogging = true,
+    lifetime: ServiceLifetime.Transient);
+
+// Multi-assembly with custom lifetime
+builder.Services.AddCustomDispatcher(
+    [typeof(Program), typeof(OtherProjectMarker)],
     lifetime: ServiceLifetime.Transient);
 ```
 
@@ -202,7 +215,7 @@ public class CreateToDoCommandValidator : AbstractValidator<CreateToDoCommand>
 
 ### Adding your own decorators
 
-**Global decorator** (wraps every handler) — implement `IDecorator<,>` and register it with Scrutor's `Decorate` after `AddCustomDispatcher`:
+**Global decorator** (wraps every handler) — implement `IDecorator<,>` and register it with `Decorate` after `AddCustomDispatcher`:
 
 ```csharp
 public class MyMetricsDecorator<TRequest, TResponse> : IDecorator<TRequest, TResponse>
@@ -263,7 +276,12 @@ A complete `Program.cs` setup:
 builder.Services.AddSingleton<ToDoRepository>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
-builder.Services.AddCustomDispatcher<Program>();        // scans + registers all handlers in this assembly
+// Single assembly
+builder.Services.AddCustomDispatcher<Program>();
+
+// Or across multiple assemblies
+builder.Services.AddCustomDispatcher([typeof(Program), typeof(OtherProjectMarker)]);
+
 builder.Services.Decorate(                              // optional targeted decorator
     typeof(IRequestHandler<GetToDosQuery, IEnumerable<ToDo>>),
     typeof(GetToDosQueryHandlerDecorator));
@@ -271,7 +289,6 @@ builder.Services.Decorate(                              // optional targeted dec
 
 ## Dependencies
 
-- [Scrutor](https://github.com/khellang/Scrutor) 7.x — assembly scanning and decoration.
 - [FluentValidation](https://docs.fluentvalidation.net/) 12.x — used by the validation decorator (optional; disable via `UseValidation = false`).
 - [Microsoft.Extensions.DependencyInjection.Abstractions](https://www.nuget.org/packages/Microsoft.Extensions.DependencyInjection.Abstractions) 10.x — DI abstractions.
 - [Microsoft.Extensions.Logging.Abstractions](https://www.nuget.org/packages/Microsoft.Extensions.Logging.Abstractions) 10.x — logging abstractions.

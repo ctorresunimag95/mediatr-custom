@@ -9,7 +9,7 @@ This guide walks through migrating an existing .NET project from MediatR to the 
 | Area | MediatR | Custom Dispatcher |
 |---|---|---|
 | Package | `MediatR` + `MediatR.Extensions.Microsoft.DependencyInjection` | `Dispatcher` project reference |
-| DI registration | `builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(...))` | `builder.Services.AddCustomDispatcher<TMarker>()` |
+| DI registration | `builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(...))` | `builder.Services.AddCustomDispatcher<TMarker>()` or `AddCustomDispatcher([typeof(A), typeof(B)])` for multiple assemblies |
 | Dispatcher interface | `IMediator` | `IDispatcher` |
 | Dispatch method | `_mediator.Send(request, ct)` | `_dispatcher.SendAsync(request, ct)` |
 | Request marker (command) | `IRequest<TResponse>` | `ICommand<TResponse>` *(or keep `IRequest<T>`)* |
@@ -52,8 +52,11 @@ Add the dispatcher project reference:
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
-// After
+// After — single assembly (generic convenience overload)
 builder.Services.AddCustomDispatcher<Program>();
+
+// After — handlers spread across multiple projects
+builder.Services.AddCustomDispatcher([typeof(Program), typeof(OtherProjectMarker)]);
 ```
 
 If you were passing options to MediatR (e.g. a custom `MediatorServiceConfiguration`), map them to `DispatchOptions`:
@@ -65,6 +68,11 @@ builder.Services.AddCustomDispatcher<Program>(options =>
     options.UseLogging    = true;
     options.UseValidation = true;
 });
+
+// After — multiple assemblies with options
+builder.Services.AddCustomDispatcher(
+    [typeof(Program), typeof(OtherProjectMarker)],
+    options => { options.UseLogging = true; options.UseValidation = true; });
 ```
 
 `AddCustomDispatcher` keeps `IDispatcher` registered as `Transient`. The optional `lifetime` parameter controls handler registrations only and defaults to `Scoped`.
@@ -340,5 +348,5 @@ Rows marked *(optional)* can be skipped — `IRequest` and `IRequestHandler` are
 | `IMediator` | `IDispatcher` |
 | `_mediator.Send(` | `_dispatcher.SendAsync(` |
 | `await next()` (inside behavior) | `await _inner.Handle(request, ct)` |
-| `AddMediatR(cfg => cfg.RegisterServicesFromAssembly(...))` | `AddCustomDispatcher<TMarker>()` |
+| `AddMediatR(cfg => cfg.RegisterServicesFromAssembly(...))` | `AddCustomDispatcher<TMarker>()` or `AddCustomDispatcher([typeof(A), typeof(B)])` |
 | `AddTransient(typeof(IPipelineBehavior<,>), typeof(MyBehavior<,>))` | `Decorate(typeof(IRequestHandler<,>), typeof(MyDecorator<,>))` |
